@@ -14,7 +14,7 @@ internal static class CommonPatchLogic
     }
 }
 
-[HarmonyPatch(typeof(Destructible), nameof(Destructible.Start))]
+[HarmonyPatch(typeof(Destructible), "Start")]
 internal class DestructiblePatch
 {
     [UsedImplicitly]
@@ -26,49 +26,49 @@ internal class DestructiblePatch
     }
 }
 
-[HarmonyPatch(typeof(MineRock), nameof(MineRock.Start))]
+[HarmonyPatch(typeof(MineRock), "Start")]
 internal class MineRockPatch
 {
     [UsedImplicitly]
     static void Postfix(ref MineRock __instance) => CommonPatchLogic.Patch(__instance.gameObject);
 }
 
-[HarmonyPatch(typeof(MineRock5), nameof(MineRock5.Awake))]
+[HarmonyPatch(typeof(MineRock5), "Awake")]
 internal class MineRock5Patch
 {
     [UsedImplicitly]
     static void Postfix(ref MineRock5 __instance) => CommonPatchLogic.Patch(__instance.gameObject);
 }
 
-[HarmonyPatch(typeof(Location), nameof(Location.Awake))]
+[HarmonyPatch(typeof(Location), "Awake")]
 internal class LocationPatch
 {
     [UsedImplicitly]
     static void Postfix(ref Location __instance) => CommonPatchLogic.Patch(__instance.gameObject);
 }
 
-[HarmonyPatch(typeof(Leviathan), nameof(Leviathan.Awake))]
+[HarmonyPatch(typeof(Leviathan), "Awake")]
 internal class LeviathanPatch
 {
     [UsedImplicitly]
     static void Postfix(ref Leviathan __instance) => CommonPatchLogic.Patch(__instance.gameObject);
 }
 
-[HarmonyPatch(typeof(TeleportWorld), nameof(TeleportWorld.Awake))]
+[HarmonyPatch(typeof(TeleportWorld), "Awake")]
 internal class TeleportWorldPatch
 {
     [UsedImplicitly]
     static void Postfix(ref TeleportWorld __instance) => CommonPatchLogic.Patch(__instance.gameObject);
 }
 
-[HarmonyPatch(typeof(PickableItem), nameof(PickableItem.Awake))]
+[HarmonyPatch(typeof(PickableItem), "Awake")]
 internal class PickableItemPatch
 {
     [UsedImplicitly]
     static void Postfix(ref PickableItem __instance) => CommonPatchLogic.Patch(__instance.gameObject);
 }
 
-[HarmonyPatch(typeof(Container), nameof(Container.Awake))]
+[HarmonyPatch(typeof(Container), "Awake")]
 internal class ContainerPatch
 {
     [UsedImplicitly]

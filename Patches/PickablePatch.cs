@@ -5,26 +5,29 @@ using UnityEngine;
 
 namespace AutoMapPins.Patches;
 
-[HarmonyPatch(typeof(Pickable), nameof(Pickable.Awake))]
+[HarmonyPatch(typeof(Pickable), "Awake")]
 internal class PickablePatch
 {
+    private static readonly AccessTools.FieldRef<Pickable, bool> PickedRef =
+        AccessTools.FieldRefAccess<Pickable, bool>("m_picked");
+
     [UsedImplicitly]
     [HarmonyPriority(Priority.High)]
     static void Postfix(ref Pickable __instance)
     {
         // only add a pin, if the pickable is not picked already
-        if (!__instance.m_picked) CommonPatchLogic.Patch(__instance.gameObject);
+        if (!PickedRef(__instance)) CommonPatchLogic.Patch(__instance.gameObject);
     }
 }
 
-[HarmonyPatch(typeof(Pickable), nameof(Pickable.SetPicked))]
+[HarmonyPatch(typeof(Pickable), "SetPicked")]
 public class PickableDropPatch
 {
     [UsedImplicitly]
-    // ReSharper disable once InconsistentNaming
     private static void Postfix(ref Pickable __instance, bool picked)
     {
         GameObject gameObject = __instance.gameObject;
+
         // we skip any objects inside dungeons (above 4000m height)
         if (gameObject.transform.position.y <= AutoMapPinsPlugin.MaxDetectionHeight.Value && picked)
         {

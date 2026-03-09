@@ -1,14 +1,25 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using AutoMapPins.Common;
 using AutoMapPins.Data;
 using AutoMapPins.Icons;
+using HarmonyLib;
 using UnityEngine;
 
 namespace AutoMapPins.Model;
 
 public class MapPin : Minimap.PinData
 {
+    private static readonly AccessTools.FieldRef<Minimap, bool> PinUpdateRequiredRef =
+        AccessTools.FieldRefAccess<Minimap, bool>("m_pinUpdateRequired");
+
+    private static readonly MethodInfo? CreateMapNamePinMethod =
+        AccessTools.DeclaredMethod(typeof(Minimap), "CreateMapNamePin");
+
+    private static readonly MethodInfo? DestroyMapMarkerMethod =
+        AccessTools.DeclaredMethod(typeof(Minimap.PinNameData), "DestroyMapMarker");
+
     internal readonly string InternalName;
     internal Config.Pin Config = null!;
     private readonly List<Vector3> InstancePositions = new();
@@ -43,8 +54,13 @@ public class MapPin : Minimap.PinData
         Config = config;
         m_name = Config.Name;
         m_save = Config.IsPermanent;
-        if (Config.IconName != null) m_icon = Assets.GetIcon(Config.IconName);
-        m_NamePinData?.DestroyMapMarker();
+
+        if (Config.IconName != null)
+            m_icon = Assets.GetIcon(Config.IconName);
+
+        if (m_NamePinData != null)
+            DestroyMapMarkerMethod?.Invoke(m_NamePinData, null);
+
         m_NamePinData = new Minimap.PinNameData(this);
         UpdatePin();
     }
@@ -54,8 +70,10 @@ public class MapPin : Minimap.PinData
         UpdatePosition();
         UpdatePinText();
         UpdatePinColor();
+
         // make sure that (independently of calls inside called methods) we do update the map pins
-        if (Minimap.instance) Minimap.instance.m_pinUpdateRequired = true;
+        if (Minimap.instance)
+            PinUpdateRequiredRef(Minimap.instance) = true;
     }
 
     private void UpdatePosition()
@@ -69,7 +87,10 @@ public class MapPin : Minimap.PinData
             );
             m_pos = newCenter;
         }
-        else m_pos = InstancePositions.First();
+        else
+        {
+            m_pos = InstancePositions.First();
+        }
     }
 
     private void UpdatePinText()
@@ -77,26 +98,37 @@ public class MapPin : Minimap.PinData
         if (InstancePositions.Count > 1)
         {
             var countString = InstancePositions.Count + "";
-            m_name = string.IsNullOrEmpty(Config.Name) ? countString :
-                countString == "" ? Config.Name : countString + " " + Config.Name;
+            m_name = string.IsNullOrEmpty(Config.Name)
+                ? countString
+                : countString == "" ? Config.Name : countString + " " + Config.Name;
         }
-        else m_name = string.IsNullOrEmpty(Config.Name) ? " " : Config.Name;
+        else
+        {
+            m_name = string.IsNullOrEmpty(Config.Name) ? " " : Config.Name;
+        }
 
         // this is required to be able to re-create the text on textual changes due to grouping
-        m_NamePinData.DestroyMapMarker();
+        if (m_NamePinData != null)
+            DestroyMapMarkerMethod?.Invoke(m_NamePinData, null);
+
         if (!Minimap.instance) return;
+
         RectTransform root = Minimap.instance.m_mode == Minimap.MapMode.Large
             ? Minimap.instance.m_pinNameRootLarge
             : Minimap.instance.m_pinNameRootSmall;
-        Minimap.instance.CreateMapNamePin(this, root);
+
+        CreateMapNamePinMethod?.Invoke(Minimap.instance, new object[] { this, root });
     }
 
     internal void UpdatePinColor()
     {
         if (!m_iconElement) return;
+
         Color color = Config.IconColorRGBA?.FromConfig() ?? Color.white;
         m_iconElement.color = color;
-        m_NamePinData.PinNameText.color = color;
+
+        if (m_NamePinData?.PinNameText != null)
+            m_NamePinData.PinNameText.color = color;
     }
 
     internal bool AcceptsObject(PositionedObject objectToGroup)
@@ -111,6 +143,7 @@ public class MapPin : Minimap.PinData
         float groupingRadius = Config is { GroupingDistance: > 0 }
             ? Config.GroupingDistance
             : AutoMapPinsPlugin.GroupingRadius.Value;
+
         return Utils.DistanceXZ(m_pos, newPosition) < groupingRadius;
     }
 
@@ -132,12 +165,15 @@ public class MapPin : Minimap.PinData
     public override string ToString()
     {
         string result =
-            $"custom AMP pin: '{m_name}' (game object name '{InternalName}') at position '{m_pos.ToString()}' " +
+            $"custom AMP pin: '{m_name}' (game object name '{InternalName}') at position '{m_pos}' " +
             $"with icon '{Config.IconName}', permanent '{Config.IsPermanent}'";
+
         if (InstancePositions.Count <= 1) return result;
+
         result += "; grouped pin, containing positions:";
         foreach (var position in InstancePositions)
             result += "\n  " + position;
+
         return result;
     }
 }

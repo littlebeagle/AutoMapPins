@@ -339,9 +339,6 @@ environment:
   - Greydwarf_camp1
   - HeathRockPillar
   - InfestedTree01
-  - Mistlands_DvergrBossEntrance1
-  - Mistlands_DvergrTownEntrance1
-  - Mistlands_DvergrTownEntrance2
   - Mistlands_Excavation1
   - Mistlands_Excavation2
   - Mistlands_Excavation3
@@ -477,4 +474,14 @@ environment:
   - widestone
   - widestone_frac
   isActive: false
+dvergr_structures:
+  categoryConfiguredObjects:
+  - Mistlands_DvergrTownEntrance1
+  - Mistlands_DvergrTownEntrance2
+  - Mistlands_DvergrBossEntrance1
+  name: Dvergr Structure
+  isActive: true
+  isPermanent: true
+  iconName: dungeon
+
 

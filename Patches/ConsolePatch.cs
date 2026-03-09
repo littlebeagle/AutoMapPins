@@ -5,6 +5,7 @@ using AutoMapPins.Common;
 using AutoMapPins.Data;
 using HarmonyLib;
 using JetBrains.Annotations;
+using System.Reflection;
 
 namespace AutoMapPins.Patches;
 
@@ -20,6 +21,9 @@ internal class ConsolePatches : HasLogger
 
     private const string PrintEffectiveConfigRequiredNameMessage =
         "for printing the effective config of an object, please provide the object name as argument to the command";
+
+    private static readonly MethodInfo? ClearPinsMethod =
+    AccessTools.DeclaredMethod(typeof(Minimap), "ClearPins");
 
     [UsedImplicitly]
     private static void Postfix(Console __instance)
@@ -40,7 +44,7 @@ internal class ConsolePatches : HasLogger
                         case ClearPins:
                             if (Minimap.instance)
                             {
-                                Minimap.instance.ClearPins();
+                                ClearPinsMethod?.Invoke(Minimap.instance, null);
                                 __instance.Print(ClearAllMessage);
                                 Log.LogWarning(ClearAllMessage);
                             }

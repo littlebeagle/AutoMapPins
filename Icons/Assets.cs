@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using TMPro;
 using UnityEngine;
 using Resources = AutoMapPins.Properties.Resources;
@@ -7,6 +9,10 @@ namespace AutoMapPins.Icons;
 
 internal abstract class Assets
 {
+    private static readonly MethodInfo? LoadImageMethod =
+        Type.GetType("UnityEngine.ImageConversion, UnityEngine.ImageConversionModule")
+            ?.GetMethod("LoadImage", new[] { typeof(Texture2D), typeof(byte[]) });
+
     private static readonly Sprite DefaultIcon = LoadSpriteFromTexture(Resources.Dot);
 
     private static readonly Dictionary<string, Sprite> Icons = new()
@@ -69,7 +75,13 @@ internal abstract class Assets
     private static Texture2D LoadTextureFromRaw(byte[] bytes)
     {
         Texture2D tex = new Texture2D(2, 2);
-        tex.LoadImage(bytes);
+
+        if (LoadImageMethod == null)
+            throw new InvalidOperationException("Could not find UnityEngine.ImageConversion.LoadImage at runtime.");
+
+        object? result = LoadImageMethod.Invoke(null, new object[] { tex, bytes });
+        if (result is bool loaded && !loaded)
+            throw new InvalidOperationException("UnityEngine.ImageConversion.LoadImage returned false.");
 
         return tex;
     }
@@ -77,9 +89,11 @@ internal abstract class Assets
     private static Sprite LoadSpriteFromTexture(Texture2D spriteTexture, float pixelsPerUnit = 100f)
     {
         AutoMapPinsPlugin.Log.LogDebug($"Making Sprite from Texture {spriteTexture}");
-        return Sprite.Create(spriteTexture,
+        return Sprite.Create(
+            spriteTexture,
             new Rect(0.0f, 0.0f, spriteTexture.width, spriteTexture.height),
-            new Vector2(0.0f, 0.0f), pixelsPerUnit);
+            new Vector2(0.0f, 0.0f),
+            pixelsPerUnit);
     }
 
     private static Sprite LoadSpriteFromTexture(byte[] bytes)
